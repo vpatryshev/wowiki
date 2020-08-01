@@ -1,7 +1,4 @@
-# DRAFT #
-
 # Algebraic Data Types, Categorically
-
 
 
 ## Algebraic Theories
