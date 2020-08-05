@@ -96,13 +96,28 @@ Having all this, we can easily build a functor for a given multisorted algebraic
 
 Returning to the type-theoretical view, we have, as a representation, a global type **T<sub>0</sub>**, which is a product of all possible types, for starters. Then our functor gives us a way to build the type of expressions, which is a union of all possible expressions. Recursively we build a type of syntax trees, which is a fixed point (the smallest one) of our functor.
 
+Also, from nlab: "A monad (T,μ,i) on the category Set of sets, is finitary (also called algebraic, although some people consider any monad to be an algebraic notion) if the underlying endofunctor T:Set→Set commutes with filtered colimits.
+
+In other words, an algebraic monad is a monoid in the category of algebraic endofunctors on Set."
+
+Same page, further down:
+"A finitary monad (T,μ,i) is completely determined by its value on all finite ordinals n∈ℕ0 considered as standard finite sets. T(n) is then the set of n-ary operations. The notion of algebraic monad is hence similar to the notion of a nonsymmetric operad in Set, but it is not equivalent, because of the possibility of duplicating or discarding inputs.
+
+More precisely, each finitary monad T defines a Lawvere theory Th<sub>T</sub>, namely Th<sub>T</sub>=Free<sup>op</sup><sub>fin</sub> where Free<sub>fin</sub> is the category of free algebras T(n) on finite sets (as a full subcategory of Alg<sub>T</sub>). In fact, the two notions are equivalent: the assignment
+
+T↦Th<sub>T</sub>
+
+defines an equivalence between the category of finitary monads on Set and the category of Lawvere theories. Moreover, the category of T-algebras is equivalent to the category of models of Th<sub>T</sub>. However, a technical advantage of Lawvere theories is that they can be interpreted in categories other than Set: a model of a Lawvere theory 𝒯 in a category with cartesian products C is just a product-preserving functor 𝒯→C."
+
 Sources:
+  - [Lawvere, "Algebraic Theories, Algebraic Categories, and Algebraic Functors"](https://github.com/mattearnshaw/lawvere/blob/master/pdfs/1965-algebraic-theories-algebraic-categories-and-algebraic-functors.pdf)
+  - [Lawvere, "FUNCTORIAL SEMANTICS OF ALGEBRAIC THEORIES"](http://www.tac.mta.ca/tac/reprints/articles/5/tr5.pdf)
   - [Type System (wiki)](https://en.wikipedia.org/wiki/Type_system)
   - [ADT (wiki)](https://en.wikipedia.org/wiki/Algebraic_data_type)
   - [ADT explained on SO](https://stackoverflow.com/questions/16770/haskells-algebraic-data-types/5917133#5917133)
   - [GADT (wiki)](https://en.wikipedia.org/wiki/Generalized_algebraic_data_type)
   - [Cheney, Hinze, "First-Class Phantom Types"](https://ecommons.cornell.edu/bitstream/handle/1813/5614/TR2003-1901.pdf?sequence=1&isAllowed=y)
-- [Fritz Henglein, "Kleene meets Church: Regular expressions as types"](http://www.cs.ox.ac.uk/ralf.hinze/WG2.8/27/slides/fritz.pdf)
+  - [Fritz Henglein, "Kleene meets Church: Regular expressions as types"](http://www.cs.ox.ac.uk/ralf.hinze/WG2.8/27/slides/fritz.pdf)
 - [Gordon Plotkin and John Power, "Semantics for algebraic operations"](http://homepages.inf.ed.ac.uk/gdp/publications/sem_alg_ops.pdf)
 - [Gordon Plotkin and John Power, "Algebraic Operations and Generic Effects"](http://homepages.inf.ed.ac.uk/gdp/publications/alg_ops_gen_effects.pdf)
 - [Andrej Bauer, "What is algebraic about algebraic effects and handlers?"](https://arxiv.org/abs/1807.05923)
@@ -111,3 +126,7 @@ Sources:
 - [reference compendium by xacid.dreamwidth.org](https://xacid.dreamwidth.org)
 - [Bartosz's explanations of all this, in Haskell](https://bartoszmilewski.com/2018/08/20/recursion-schemes-for-higher-algebras)
 - [S.MacLane, I.Moerdijk, "Sheaves in Geometry and Logic: A First Introduction to Topos Theory"](https://www.amazon.com/Sheaves-Geometry-Logic-Introduction-Universitext/dp/0387977104/ref=sr_1_1?dchild=1&qid=1595807966&s=books&sr=1-1)
+- [finitary monad, nLab](https://ncatlab.org/nlab/show/finitary+monad)
+- [Eugenia Cheng, Distributive laws for Lawvere theories](https://www.youtube.com/watch?v=t4pwM8h8XyY)
+- [Geometric Theory on nLab](https://ncatlab.org/nlab/show/geometric+theory)
+- [Theory of Objects on nLab](https://ncatlab.org/nlab/show/theory+of+objects)
