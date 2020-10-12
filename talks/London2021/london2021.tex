@@ -1,0 +1,745 @@
+\documentclass[10pt]{asme2ej}
+
+\usepackage{epsfig} %% for loading postscript figures
+\usepackage{placeins}
+\usepackage[all]{xy}
+\usepackage{dsserif}
+\usepackage{listings}
+\usepackage{xcolor}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+\newcommand{\catname}[1]{\textbf{#1}}
+\newcommand{\Set}{\catname{Set}}
+\newcommand{\Rel}{\catname{Rel}}
+
+%% The class has several options
+%  onecolumn/twocolumn - format for one or two columns per page
+%  10pt/11pt/12pt - use 10, 11, or 12 point font
+%  oneside/twoside - format for oneside/twosided printing
+%  final/draft - format for final/draft copy
+%  cleanfoot - take out copyright info in footer leave page number
+%  cleanhead - take out the conference banner on the title page
+%  titlepage/notitlepage - put in titlepage or leave out titlepage
+%  
+%% The default is oneside, onecolumn, 10pt, final
+
+
+\title{Intuitionistic Logic Implemented in Scala\\
+Submitted for Publication at SAI Computing Conference, London, 2021}
+
+%%% first author
+\author{Vlad Patryshev}	
+
+
+
+\begin{document}
+\UseRawInputEncoding
+
+\maketitle    
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{abstract}
+{\it 
+An implementation of intuitionistic (Grothendieck topos-based, for a finite site) is described, with a variety of examples. 
+
+This paper demonstrates how non-Boolean logic can be implemented, to enable using all the power of Intuitionism. For that, a library was developed that works with topos logic. Sample code shows the logic for a variety of sites. 
+}
+\end{abstract}
+
+\section{Introduction}
+
+ In this paper I present a Scala implementation of topos logic (that is, an intuitionistic logic). Intuitionism includes all kinds of fuzzy and temporal logic (see TLA+). Having a code package modeling Intuitionism, one can experiment with different kinds of fuzziness and different shape s of time flow. The toposes used are Grothendieck toposes, and the sites are finite. 
+ 
+ Two categories (toposes) are chosen over which Grothendieck toposes are built. These categories are $Set$ and $Setf$, that is, a category of all (available in the code) sets, and the category of all finite sets available in the code. Since Scala does not exactly implement sets as are defined in set theories, a couple of new classes are introduced to resolve this issue.
+
+This paper demonstrates how non-Boolean logic can be implemented, to enable using all the power of Intuitionism. For that, a library was developed that works with topos logic. Sample code shows the logic for a variety of sites.
+The code is located at 
+\verb+https://github.com/vpatryshev/Categories+.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Non-Boolean Logic}
+Let us first introduce the idea of non-Booleanness, in a strict mathematical sense of the term. 
+
+\subsection{The Meaning of Non-Booleanness}
+
+Traditionally, as soon as we switch from the complicated logic of the real world into the realm of formal software design, we assume that just two outcomes are possible for any statement: it is either true or false. 
+This is not a feature of mathematical discourse but rather an interesting feature of the modern way of thinking. 
+In real life, we admit that there are more possibilities: something we may not know today, we may learn tomorrow. 
+We may assume something to be true with a certain probability. 
+Similarly, in science we may not know the answer, and the answer may be something we don't expect - like with the case of Continuum Hypothesis.
+
+In intuitionistic logic, the double negation law does not have to hold. If it does, the logic is Boolean. Here we will show a way to eliminate the double negation law while keeping the remaining rules and axioms that don't depend on double negation.
+Of course, if the double negation law is included, we still have an intuitionistic logic that is also Boolean.
+
+Also a logic may have more than two logical constants, but that does not make it non-Boolean. 
+The double negation rule may still be applicable in such a logic.
+
+\subsubsection{Example 1. Boolean Logic, but not 2-Valued}
+
+Consider bytes and their operations: bitwise conjunction, bitwise disjunction, and negation. There are 256 different values, but we know
+that double negation in this bitwise logic is an identity. 
+So, this 256-valued logic is Boolean.\\
+
+\subsection{Dropping Booleanness}
+
+Remove the rule stating that either $P$ or $\neg P$ is true.
+Formally, that $\vdash P \lor \neg P$. Once we remove this rule, 
+we cannot apply it anymore in general settings, although it may still work in some cases.
+
+We immediately bump into a problem: this rule was used to define
+implication: $P\ \rightarrow\ Q\ \equiv\ \neg\ P\ \lor\ Q$. 
+We must define implication differently. Here's a reasonable alternative solution:
+
+$$(P \land Q)\vdash R \equiv P \vdash ( Q \rightarrow R)$$
+
+Informally, saying that $R$ can be deduced from a conjunction $P\land Q$
+is the same as saying that we can deduce the implication $Q\rightarrow R$ from $P$. 
+Imagine $Q$ is $\top$. Then, from the formula
+above, it follows that $Q\rightarrow R$ is the same as R. On the other hand,
+if $Q$ is closer to the bottom, the situation may change. 
+For example, if $Q$ is “below” $R$, the implication $Q\rightarrow R$ is true.
+We can interpret the implication defined this way as the level of dependency of $R$ on $Q$.\\
+
+As you see, we can define implication via conjunction, and negation is not involved.\\
+
+Does this remind you currying? Given a function $f(P,Q):R$, we
+transform it to a function $f_c(P): Q \rightarrow R$.\\
+
+Now that implication is defined, we can define negation as
+$\neg P = P\rightarrow \bot$. Its properties make it
+similar to classical negation, but the double negation law is not generally applicable anymore. Assume we use the definition above. 
+In the table below, we list some properties that are valid for this definition.
+\FloatBarrier
+\begin{table}[!htbp]
+\begin{center}
+\label{table_Sample_Statements}
+\begin{tabular}{c l l}
+& & \\ 
+\hline
+Statement & Meaning \\
+\hline
+$P \land \neg P \vdash \bot$ & Negation of $P$ is incompatible with $P$.\\
+  $\neg \neg \neg P \vdash \neg P$ & Triple negation is the same as single negation.\\
+  $P \vdash \neg \neg P$ & Double negation of $P$ is weaker than $P$.\\
+  $\neg P \lor \neg Q \vdash \neg (P \land Q)$ &  If not $P$ or not $Q$, then we can’t have both $P$ and $Q$\\
+  $\neg (P \lor Q) \vdash \neg P \land \neg Q$ &  If disjunction of $P$ and $Q$ is not true, then neither $P$ nor $Q$ is true.\\
+  $\neg P \land \neg Q \vdash \neg (P \lor Q)$ & If neither $P$ nor $Q$ is true, their disjunction is not true.\\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+Some properties do not apply in this kind of logic:
+\begin{table}[!htbp]
+\begin{center}
+\label{table_Sample_Wrong_Statements}
+\begin{tabular}{c l l}
+& & \\ 
+\hline
+Wrong Statement & What’s wrong with it? \\
+\hline
+$\neg \neg P \vdash P$   &                     Negation of negation of $P$ is not strong enough to give us $P$.\\
+
+  $\neg (P \land Q) \vdash \neg P\lor \neg Q$ &   Even if we can’t have both at the same time,
+  this does not mean that one of them is always wrong.\\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Example 2. Three Logical Values (“Ternary Logic”)}
+
+Start with three logical values, $\top$, $\bot$, and $?$. Define operations for them:
+
+\begin{center}
+\begin{tabular}{ |c|c|c| }
+\hline
+$\textbf{x}$ & $\textbf{\neg x}$ & $\textbf{\neg \neg x}$ \\
+\hline
+$\top$ & $\bot$ & $\top$ \\
+$?$    & $\bot$ & $\top$ \\
+$\bot$ & $\top$ & $\bot$ \\
+  \hline
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{tabular}{ |c|c|c|c|c| }
+\hline
+$\textbf{x}$ & $\textbf{y}$ & ${\textbf{x} {\land} \textbf{y}}$  & $\textbf{x} \lor \textbf{y}$ & $\textbf{x} \rightarrow \textbf{y}$   \\
+\hline
+$\top$ & $\top$ & $\top$ & $\top$ & $\top$ \\
+$\top$ &   $?$ &    $?$ &  $\top$ & $?$ \\
+$\top$ & $\bot$ & $\bot$ & $\top$ & $\bot$ \\
+ $?$ &  $\top$ &   $?$ &  $\top$ & $\top$ \\
+ $?$ &    $?$ &    $?$ &    $?$ & $\top$ \\
+ $?$ &  $\bot$ & $\bot$ &   $?$ & $\bot$ \\
+$\bot$ & $\top$ & $\bot$ & $\top$ & $\top$ \\
+$\bot$ &   $?$ &  $\bot$ &   $?$ & $\top$ \\
+$\bot$ & $\bot$ & $\bot$ & $\bot$ & $\top$ \\
+  \hline
+\end{tabular}
+\end{center}
+
+This is the simplest intuitionistic logic, and it is a good tool for testing our statements.
+
+The value ‘?,’ or ‘unknown,’ is somewhere between ‘truth’ $\top$ and ‘false’ $\bot$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Example 3. Infinite Number of Logical Values}
+
+Take $[0,1]$, the set of all real numbers between $0$ and $1$, including
+$0$ and $1$. We can turn it into logic by defining:
+
+-   $\bot = 0$
+
+-   $\top =1$
+
+-   $a \land b = glb(a,b)$
+
+-   $a \lor b = lub(a,b)$
+
+In this example, implication is defined, as always, via the equivalence:
+$(x~\land~y)~\leq~z~\equiv~x~\leq~(y~\rightarrow~z)$. 
+
+
+We consider the following two cases separately:
+ 
+
+First, when $y\leq z$, 
+$(x~\land~y)~\leq~z$ is always true, for any $x$. Hence $y~\rightarrow~z$
+cannot be smaller than any $x$, that is, it must be the top element, $1$.
+
+
+In the opposite case, when $y$ is bigger than $z$ (we are talking about numbers),
+$( x \land y \leq z) \equiv ( x \leq z )$, so now we will have 
+$x~\leq~z~\equiv~x~\leq~(y~\rightarrow~z)$, which means that $y~\rightarrow~z~=~z$.
+
+Remember that we defined negation, $\neg x$, as $x\rightarrow 0$, and we have
+$\neg x\ \equiv\ if\ (x = 0)\ 1\ else\ 0$. You can also check whether double
+negation maps $0$ to $0$ and any non-zero value to $1$.
+
+In this example, we started with a set of values that was popular in "fuzzy logic," and we were able to build
+a pretty sound logic, except that it could not be made Boolean: double negation is not an identity.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Sets and Categories}
+ \\
+ 
+\subsection{Sets}
+ \\
+Scala programming language uses a pretty loose notion of sets; they have too many methods (like \verb+head()+), and functions are not defined as "special sets of pairs", as they are defined in ZFC. So we had to introduce a special class for working with sets. Class $BigSet$ is the most general class defining sets; it does not even have to be enumerable.
+
+\begin{lstlisting}[language=Scala]
+abstract class BigSet[T] extends Set[T] {
+ override def size: Int = Sets.InfiniteSize
+...
+\end{lstlisting}
+
+This abstract "container" covers all possible sets.
+Remember, sets are not typed (in a set theory).
+
+\begin{lstlisting}[language=Scala]
+object Sets {                                     
+ type set = Set[Any]
+
+ implicit class untype[T](s: Set[T]) {
+   def untyped: set = s.asInstanceOf[set]
+ }
+
+ def isFinite(s: Set[_]) Boolean = s.size != InfiniteSize
+ val Empty: set = Set.empty[Any]
+ val Unit: set = Set(Empty)
+ val FiniteSets = BigSet.comprehension(isFinite)
+ ...
+\end{lstlisting}
+
+We can now define non-enumerable sets (thus banning all those Scala/Java methods that enumerate):
+
+\begin{lstlisting}[language=Scala]
+trait NonEnumerableSet[T] extends Set[T] {
+  private def notEnumerable = throw Stone(...)
+  override def isEmpty: Boolean = notEnumerable
+  def iterator: Iterator[T] = notEnumerable
+  override def toArray[S >: T : ClassTag] = notEnumerable
+}
+\end{lstlisting}
+
+These classes will be used to properly define Grothendieck toposes over sites.
+
+
+\section{Categories}
+
+Before defining \verb+Category+, let's define \verb+Graph+:
+
+\begin{lstlisting}[language=Scala]
+trait Graph { graph =>
+  type Node
+  type Arrow
+  def nodes: Set[Node]
+  def arrows: Set[Arrow]
+  def d0(f: Arrow): Node
+  def d1(f: Arrow): Node
+...
+\end{lstlisting}
+
+\verb+trait Graph+ implements a pretty big number of useful methods, but what's important is that it specifies \verb+Node+s, \verb+Arrow+s, and their relationships.\\
+
+Having a type of \verb+Graph+s, we can define a \verb`Category` in Scala like this:
+
+\begin{lstlisting}[language=Scala]
+abstract class Category(override val name: String) extends Graph {
+  type Obj = Node
+  def id(o: Obj): Arrow
+  def m(f: Arrow, g: Arrow): Option[Arrow]  // composition
+  
+  lazy val op: Category = {
+    val src = this
+    new Category(s"~$name") {
+      override def id(o: Obj): Arrow = src.id(o)
+      override def m(f: Arrow, g: Arrow) = src.m(f, g)
+    }
+  }
+\end{lstlisting}
+
+Note that composition of arrows is a partial function lifted to \verb+Option+.\\
+
+A category does not necessarily have to be finite: here is an example of an infinite one:
+
+\begin{lstlisting}[language=Scala]
+object N extends BigSet[BigInt] with EnumerableSet[BigInt] {
+  override def iterator: Iterator[BigInt] = new Iterator[BigInt] {...}
+  override def contains(n: BigInt): Boolean = n >= 0
+}
+object PoSet {
+  lazy val ofNaturalNumbers: PoSet[BigInt] = new PoSet(N, comparator) {...}
+}
+lazy val NaturalNumbers: Category = fromPoset("N", PoSet.ofNaturalNumbers)
+\end{lstlisting}
+
+We should never attempt to materialize such a category. \\
+
+That was a countable category; we can even build an uncountable one:
+
+\begin{lstlisting}[language=Scala]
+class SetCategory(objects: BigSet[Set[Any]])
+  extends Category(name="Sets", graphOfSets(objects)) {
+  type Node = set
+  type Arrow = SetFunction
+
+  override def d0(f: SetFunction): set = f.d0
+  override def d1(f: SetFunction): set = f.d1
+  override def m(f: Arrow, g: Arrow): Option[Arrow] = f compose g
+  override def id(s: set): SetFunction = SetFunction.id(s)
+  override def toString: String = "Category of All Sets"
+...
+object Setf extends SetCategory(FiniteSets) {
+  override def toString: String = "Category of Finite Sets"
+}
+\end{lstlisting}
+
+But what is \verb+SetFunction+?
+
+\begin{lstlisting}[language=Scala]
+case class SetFunction(
+  override val tag: String,
+  override val d0: set,
+  override val d1: set,
+  mapping: Any => Any) extends SetMorphism { self =>
+...
+def compose(g: SetFunction): Option[SetFunction] =
+  if (d1 == g.d0) {
+    Some(new SetFunction(newTag, d0, g.d1, (x: Any) => g(self(x))))
+  } else None
+\end{lstlisting}
+
+\subsection{Samples of Categories}
+Below are some example of categories, built using these tools:
+
+\FloatBarrier
+\begin{table}[!htbp]
+\begin{center}
+\label{table_Sample_Categories}
+\begin{tabular}{|c|c|l|}
+\hline
+$\mathbb{ 0 }$ & & 
+\begin{lstlisting}[language=Scala]
+val _0_ : Cat = segment(0) 
+\end{lstlisting}
+\\
+\hline
+$\mathbb{ 1 } $ & • & 
+\begin{lstlisting}[language=Scala]
+val _1_ : Cat = segment(1) 
+\end{lstlisting}
+\\
+\hline
+$\mathbb{1}+\mathbb{1}$ & • • & 
+\begin{lstlisting}[language=Scala]
+val _1plus1_ : Cat = discrete(Set("a", "b")) 
+\end{lstlisting}
+\\
+\hline
+$\mathbb{2}$ & 
+\xymatrix{0 \ar[r] & 1}
+& 
+\begin{lstlisting}[language=Scala]
+val _2_ : Cat = segment(2) 
+\end{lstlisting}
+\\
+\hline
+$\mathbb{3}$ & 
+\xymatrix{&1 \ar[dr] \\
+0 \ar[ur] \ar[rr] && 2  }
+& 
+\begin{lstlisting}[language=Scala]
+val _3_ : Cat = segment(3) 
+\end{lstlisting}
+\\
+\hline
+$\mathbb{4}$ & 
+\xymatrix{
+&1 \ar[drr] \ar[r] & 2 \ar[dr]\\
+0 \ar[ur] \ar[urr] \ar[rrr] &&& 3
+}
+& 
+\begin{lstlisting}[language=Scala]
+val _4_ : Cat = segment(4) 
+\end{lstlisting}
+\\
+\hline
+$ParallelPair$ & 
+\xymatrix{
+0 \ar@<2pt>[r]^a \ar@<-2pt>[r]_b & 1
+}
+& 
+\begin{lstlisting}[language=Scala]
+category"ParallelPair:({0,1}, {a:0->1, b:0->1})"
+\end{lstlisting}
+\\
+\hline
+$Pullback$ & 
+\xymatrix{
+& b \ar[d]^{bd} \\
+c \ar[r]_{cd} & d
+}
+& 
+\begin{lstlisting}[language=Scala]
+category"Pullback:({b,c,d}, {bd:b->d, cd:c->d})" 
+\end{lstlisting}
+\\
+\hline
+$Square$ & 
+\xymatrix{
+a \ar[d]_{ac} \ar[r]^{ab} \ar[dr]|{ad} & b \ar[d]^{bd} \\
+c \ar[r]_{cd} & d
+}
+& 
+\begin{lstlisting}[language=Scala]
+category"Square:({a,b,c,d},
+{ab:a->b, ac:a->c, bd:b->d, cd:c->d, ad:a->d},
+{bd o ab = ad,cd o ac = ad})"
+\end{lstlisting}
+\\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsection{Functors and Natural Transformations}
+
+Definitions are trivial:
+
+\begin{lstlisting}[language=Scala]
+abstract class Functor(
+  val d0: Category, val d1: Category
+) extends Morphism {
+  def objectsMapping(x: d0.Obj): d1.Obj
+  def arrowsMapping(a: d0.Arrow): d1.Arrow
+  def compose(next: Functor): Option[Functor] = {
+    if (this.d1 != next.d0) None else Some { //...
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=Scala]
+abstract class NaturalTransformation
+  extends Morphism[Functor, Functor] {
+
+
+  val domain: Category = d0.d0
+  val codomain: Category = d1.d1 // == d0.d1
+
+  def transformPerObject(x: domain.Obj): codomain.Arrow
+\end{lstlisting}
+
+In the picture, you see a natural transformation for category "Pullback":
+
+\xymatrix{
+& F[b] \ar[d] \ar@{.>}[drr] \\
+F[c] \ar[r] \ar@{.>}[drr] & F[d] \ar@{.>}[drr] && G[b]  \ar[d]\\
+&&G[c] \ar[r] &G[d]
+}
+
+\section{Copresheaves (aka Diagrams)}
+
+\subsection{Definition}
+A $Copresheaf$, also known as $Diagram$, of category \catname{C} in category \catname{D} is a functor from \catname{C} to \catname{D}.
+
+We will, further on, be dealing with copresheaves in \Set, and call them $diagrams$.
+
+\begin{lstlisting}[language=Scala]
+abstract class Diagram(val domain: Category)
+  extends Functor(tag, topos.domain, Setf) { diagram =>
+
+  def isElementOf(other: Diagram): Boolean =
+    d0.objects.forall { o => other(o) contains (this(o)) }
+
+  def isContainedIn(other: Diagram): Boolean =
+    d0.objects.forall { o => this(o) subsetOf other(o) }
+\end{lstlisting}
+
+\subsection{Example 5, Diagrams over $\mathbb{N}$}
+A functor $\mathbb{N} \rightarrow \textbf{Sets}$ consists of sets $F[i]$ and functions $F[i]$→$F[i+1]$. (Other functions are compositions of these).
+These diagrams model discreet “time flow” : discrete, \cite{lamp}. 
+That’s the basic type of TLA+ book.
+
+\xymatrix{
+F[0] \ar[r] &F[1] \ar[r] &F[2] \ar[r] &{...}
+}\\
+
+Below is a table of some shapes of time that we encounter in practice.
+
+\FloatBarrier
+
+\begin{table}[!htbp]
+\begin{center}
+\label{table_Sample_Diagram Categories}
+\begin{tabular}{|c|l|}
+%\hline
+%$\textbf{Site}$ & $\textbf{Concept}$ \\
+\hline
+\xymatrix{
+F[0] \ar[r] &F[1] \ar[r] &F[2] \ar[r] &{...}
+} & TLA+ \\
+\hline
+$\bullet$ & Just sets\\
+\hline
+\xymatrix{0 \ar[r] & 1}
+& Single transition (today and tomorrow)
+\\
+\hline
+\xymatrix{
+& b \ar[d]^{bd} \\
+c \ar[r]_{cd} & d
+}
+& Git Merge
+\\
+\hline
+\xymatrix{
+a \ar[d]_{ac} \ar[r]^{ab} \ar[dr]|{ad} & b \ar[d]^{bd} \\
+c \ar[r]_{cd} & d
+}
+& Eventual Consistency
+\\
+\hline
+\xymatrix{
+{Feb1} \ar[r] & {Feb 2} \ar@(ur,ul)[]_{6:00} \ar[r] & {Feb 3}
+}
+& Groundhog day
+\\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\FloatBarrier
+
+\section{Logic in Grothedieck Topos}
+
+Now that we have a category of diagrams (it's a Grothendieck topos), we can dive deeper and build logic in it. We will be using points of objects to illustrate logic. Generally speaking, a Grothendieck topos is not well-pointed, though.
+
+\subsection{Point of a Diagram}
+A point is any arrow \xymatrix{1 \ar[r] & D}, where $1$ is a terminal object of the category of diagrams.
+
+\begin{lstlisting}[language=Scala]
+class Point(val tag: Any, val mapping: Any => Any)
+\end{lstlisting}
+
+\subsection{Subobject Classifier}
+This is a special object in a category of diagrams contains all the logic of a topos; we just have to discover it.
+
+\xymatrix{&A \ar@{>->}[d]_f \ar[r] & 1 \ar@{>->}[d]^{true} \\
+&B \ar[r]_{\chi_f} & \Omega
+}
+
+How can we build it? 
+
+$\Omega(x) \equiv hom(hx, \Omega)$ - by Yoneda lemma 
+
+$hom(hx, \Omega)  \equiv {p \subset hx}$ - by definition of $\Omega$, see above.
+
+\begin{lstlisting}[language=Scala]
+case class Representable(x: domain.Obj)
+  extends Diagram(s"hom($x, _)", domain)
+//...
+
+object Omega extends Diagram("Omega", this, domain) {
+  val False: Point = points.head named "false"
+  val True: Point = points.last named "true"
+  val conjunction: DiagramArrow = ... // OmegaxOmega(x) => Omega(x)
+  val disjunction: DiagramArrow = ... // ΩxΩ(x) => Omega(x)
+al implication: DiagramArrow = ... // ΩxΩ(x) => Omega(x)
+  ...
+}
+val OmegaxOmega = product2(Omega, Omega)
+
+val DiagonalOfOmega: DiagramArrow =
+    buildArrow("Diagonal", Omega, OmegaxOmega, _ => (s: Any) => (s, s)
+
+\end{lstlisting}
+
+\subsubsection{How to Build Conjunction in $\Omega$}
+
+\xymatrix{
+&1 \ar@{>->}[d]_{(true,true)} \ar[rr] && 1 \ar@{>->}[d]^{true} \\
+& \Omega\times\Omega \ar[rr]_{\land} && \Omega
+}
+
+\subsubsection{How to Build Implication in $\Omega$}
+
+Start with building a subobject $\Omega_1$ defining a partial order on $\Omega$:
+
+\xymatrix{
+\Omega_1 \ar@{>->}[r] & \Omega\times\Omega \ar@<1ex>[r]^{∧} \ar@<-1ex>[r]_{p_1}
+& \Omega
+}
+
+Now, implication is the arrow that classifies $\Omega_1$:
+
+\xymatrix{
+ \Omega_1 \ar[d] \ar[rr] && 1 \ar[d]^{true}  \\
+ \Omega \times \Omega \ar[rr]_{implication} && \Omega
+}
+
+\begin{lstlisting}[language=Scala]
+lazy val implication: DiagramArrow = {
+  val inclusion: DiagramArrow = inclusionOf(Omega_1) in OmegaxOmega iHope
+
+  classifies(inclusion, "=>")
+}
+\end{lstlisting}
+
+\subsection{Predicate Logic}
+
+First, what is a predicate in a topos? It's just any arrow
+$D\ \rightarrow\ \Omega$.\\
+
+Logical operations on $\Omega$ provide operations on predicates:
+
+\begin{lstlisting}[language=Scala]
+trait Predicate extends DiagramArrow { p: DiagramArrow =>
+  val d0: Diagram
+  val d1: Diagram = Omega
+  def and(q: Predicate): Predicate = binaryOp(q, "&", Omega.conjunction)
+  def or(q: Predicate): Predicate = binaryOp(q, "|", Omega.disjunction)
+  def ==>(q: Predicate): Predicate = binaryOp(q, "=>", Omega.implication)
+  ...
+}
+
+def not(p: Predicate): Predicate = p ==> FalsePredicate
+\end{lstlisting}
+
+
+As an example, here's a test case from a unittest for this code:
+
+\begin{lstlisting}[language=Scala]
+def check(c: Category): MatchResult[Any] = {
+ val topos = new CategoryOfDiagrams(c)
+ import topos._
+
+  for { p <- Omega.points map (_.asPredicate) } {
+    (True  ==> p)    === p
+    (False ==> p)    === True
+    (p     ==> p)    === True
+    (p     ==> True) === True
+    not(not(not(p))) === not(p)
+
+    for { q <- Omega.points map (_.asPredicate)
+          r <- Omega.points map (_.asPredicate) } {
+        (p and q ==> r) === (p ==> (q ==> r))
+      }
+    }
+}
+\end{lstlisting}
+
+
+
+
+\xymatrix{}
+
+\begin{lstlisting}[language=Scala]
+\end{lstlisting}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Conclusion}
+Neither Scala nor Java was designed to deal with problems like these: typeless sets, categories, infinite collections. 
+Also, the higher order type system in Scala 2 is not very convenient for
+the problems like the ones I encountered implementing categories and toposes; dependent types would make more sense.
+There's a hope that Scala 3 will help dealing with it properly.
+Strangely, implementing it in Haskell was even more challenging.
+
+In addition to intuitionistic logic, Lawvere topologies can be implemented based on this package; and the implementation is now available in the same repository.
+Using an older version of this software, we managed to enumerate all Lawvere topologies over finite sets.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The bibliography is stored in an external database file
+% in the BibTeX format (file_name.bib).  The bibliography is
+% created by the following command and it will appear in this
+% position in the document. You may, of course, create your
+% own bibliography by using the bibliography environment as in
+%
+% \begin{thebibliography}{12}
+% ...
+% \bibitem{itemreference} D. E. Knudsen.
+% {\em 1966 World Bnus Almanac.}
+% {Permafrost Press, Novosibirsk.}
+% ...
+% \end{thebibliography}
+
+% Here's where you specify the bibliography style file.
+% The full file name for the bibliography style file 
+% used for an ASME paper is asmems4.bst.
+\bibliographystyle{asmems4}
+
+% Here's where you specify the bibliography database file.
+% The full file name of the bibliography database for this
+% article is asme2e.bib. The name for your database is up
+% to you.
+\bibliography{london2021}
+
+\cite{bartosz, pierce, tt, sheaves, brief, nlab1, repo, ctgd}
+
+\end{document}
