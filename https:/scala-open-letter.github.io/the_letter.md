@@ -1,4 +1,7 @@
-scala-open-letter.github.io
+# scala-open-letter.github.io
+
+[source](https://scala-open-letter.github.io/)
+
 Open letter of support for community members targeted by Jon Pretty
 We, the undersigned, have become aware that, for some time, Jon Pretty has abused his position of privilege and stature within the Scala community to sexually harass and victimize women. He has used the community’s conferences to target women who are new to the Scala community, offering mentorship, access, and other forms of support, and then abusing the trust that he has established.
 
