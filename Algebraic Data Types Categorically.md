@@ -131,3 +131,4 @@ Sources:
 - [Geometric Theory on nLab](https://ncatlab.org/nlab/show/geometric+theory)
 - [Theory of Objects on nLab](https://ncatlab.org/nlab/show/theory+of+objects)
 - [Z.L. Low, Algebraic Theories](http://zll22.user.srcf.net/writing/algebraic-theories/20121121-Main.pdf)
+- (?) [GADTs, Functoriality, Parametricity: Pick Two - Patricia Johann, Enrico Ghiorzi, Daniel Jeffries](https://arxiv.org/abs/2105.03389)
