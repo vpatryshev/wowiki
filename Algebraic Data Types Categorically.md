@@ -5,7 +5,7 @@
 You can look them up, or look up [Lawvere theory](https://en.wikipedia.org/wiki/Lawvere_theory).
 An algebraic theory **T** consists of, in its simplest form, of one data type and a collection of operation symbols of finite arity.
 In addition, an algebraic theory may have axioms of the form expression<sub>1</sub> = expression<sub>2</sub>.
-Note also, that here we talk exclusively about finitary theories: each operation arity is a natural number. This eliminates arity problems like the one in Bauer's "What is algebraic..." paper.
+Note also that here we talk exclusively about finitary theories: each operation arity is a natural number. This eliminates arity problems like the one in Bauer's "What is algebraic..." paper.
 
 The theory of monoids is an example: it has a nullary operation `Zero` and a binary operation `Op`, with axioms for `Op`'s associativity and `Zero` being a neutral element for `Op`.
 
