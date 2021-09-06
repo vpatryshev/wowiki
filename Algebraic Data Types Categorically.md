@@ -36,7 +36,7 @@ Given a functor **F** in a category, an algebra over **F** is an object **X** wi
 ### Polynomial Functor
 Any functor **P[X]** that takes an object **X** and maps it to a polynomial object, **P[X] = Σ c<sub>i</sub>× X<sup>i</sup>**.
 
-As you see, an algebraic theory (with no axioms) **T**, when modeled in a category **C**, gives us a polynomial functor **P<sub>T</sub>**,  built out of **T**'s signatures, and also a natural transformation from **P<sub>T</sub>[X]** to **X**. That is, a model of **T** is an algebra over the functor **P<sub>T</sub>**. We can also go into whether **P<sub>T</sub>** is a monad, but that's a different story.
+As you see, an algebraic theory (with no axioms) **T**, when modeled in a category **C**, gives us a polynomial functor **P<sub>T</sub>**,  built out of **T**'s signatures, and also an arrow from **P<sub>T</sub>[X]** to **X**. That is, a model of **T** is an algebra over the functor **P<sub>T</sub>**. We can also go check whether **P<sub>T</sub>** is a monad, but that's a different story.
 
 ### Fixed point of a functor **F**
 Fixed point of **F** is an object **X** such that **F[X] ≅ X**. There may be more than one fixed point. The smallest one is an initial object in **C<sup>F</sup>**; the biggest one is a terminal object in the category of **F**-coalgebras, **C<sub>F</sub>** (the category of arrows of the form **X→F[X]**).
