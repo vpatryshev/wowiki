@@ -1,6 +1,5 @@
 package scalakittens
 
-import scala.collection.SortedMap
 import Numbers._
 
 /**
