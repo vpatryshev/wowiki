@@ -24,13 +24,13 @@ object Numbers {
     deg(n.abs, 0)
   }
 
-  def toDoubleLatexString(n: BigInt, nDigits: Int): String = {
+  def toDoubleString(n: BigInt, nDigits: Int): String = {
     val nab = n.abs
     val d = degree(nab)
     val m = n.toString.take(nDigits + 2).toDouble / math.pow(10, nDigits + 1)
     val ms = m.toString.take(nDigits + 2)
     val sign = if (n < 0) "-" else ""
-    s"$sign$ms\\(\\times\\)10^{$d}"
+    s"$sign$ms×10^{$d}"
   }
 
 }
