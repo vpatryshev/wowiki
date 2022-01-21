@@ -1,5 +1,6 @@
 package scalakittens
 
+import scala.language.postfixOps
 import scala.util.parsing.combinator._
 
 /**
@@ -38,12 +39,17 @@ object Goodstein {
         }
       }
     }
+    
+    def +(n: BigInt): HereditaryNotation = new HereditaryNotation {
+      override val constantTerm: BigInt = expr.constantTerm + n
+      override val terms: List[(HereditaryNotation, BigInt)] = expr.terms
+    }
 
     def eval(base: BigInt): BigInt = terms.foldLeft(constantTerm) {
       case (s, (t, c)) => s + c * pow(base, t.eval(base))
     }
 
-    override def toString: String = {
+    override lazy val toString: String = {
       val termStrings = terms map {
         case (t,c) => (t.toString, c.toString)
       }
@@ -59,19 +65,19 @@ object Goodstein {
             s"$c·k^$exponent"
         }
 
-      val termsString = reducedStrings.fold ("") {
+      val stringOfTerms = reducedStrings.fold ("") {
         case ("", term) => term
         case (acc, term) => s"$term + $acc"
       }
 
-      (termsString, constantTerm) match {
+      (stringOfTerms, constantTerm) match {
         case ("", x) => x.toString
         case (s, Big0)  => s
         case (s, x) => s"$s + $x"
       }
     }
     
-    def toLatex = toString.replace("·", """\(\times\)""")
+    def toLatex: String = toString.replace("·", """\(\times\)""")
 
     override def compare(that: HereditaryNotation): Int = {
       (this.height, this.constantTerm).compare(that.height, that.constantTerm)
@@ -79,13 +85,12 @@ object Goodstein {
 
     override def equals(obj: Any): Boolean = {
       obj match {
-        case other: HereditaryNotation =>
-          constantTerm == other.constantTerm && terms == other.terms
+        case other: HereditaryNotation => toString == other.toString
         case _ => false
       }
     }
 
-    override lazy val hashCode: Int = constantTerm.hashCode() * 53 + terms.hashCode()
+    override lazy val hashCode: Int = toString.hashCode()
   }
 
   case class Const(value: BigInt) extends HereditaryNotation {
@@ -122,6 +127,17 @@ object Goodstein {
       }
     }
 
+    def apply(n: Int): HereditaryNotation = {
+      apply(n2hn(n))
+    }
+    
+    def n2hn(n: Int): String = {
+      val constTerm = if (n % 2 == 0) "0" else "1"
+      val terms = (1 until 32) collect { case i if (n & (1 << i)) != 0 => s"k^{${n2hn(i)}}" } toList
+
+      (constTerm :: terms) mkString "+"
+    }
+    
     val Zero: Const = Const(Big0)
     val One: Const = Const(Big1)
     val K: Power = Power(One)
@@ -165,9 +181,12 @@ object Goodstein {
       case t: Term => t
     }
     
-    def apply(ex: String): HereditaryNotation = parseAll(expr, ex).get
+    def apply(ex: String): HereditaryNotation = parseAll(expr, ex) match {
+      case Success(result, _) => result
+      case NoSuccess(msg: String, _) => throw new IllegalArgumentException(s"$msg on $ex")
+    }
   }
-
+  
   // e.g. 3\(\times\)(132^{132}) + 3\(\times\)(132^3) + 2\(\times\)(132^2) + 3\(\times\)132 + 131
   def fromLatex(latex: String): HereditaryNotation = {
     HereditaryNotation(latex.replace("""\(\times\)""", "·"))

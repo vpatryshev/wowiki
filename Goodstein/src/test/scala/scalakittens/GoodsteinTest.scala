@@ -4,6 +4,7 @@ import Numbers._
 import org.scalatest.matchers.should.Matchers
 import scalakittens.Goodstein.HereditaryNotation
 import Goodstein._
+import scalakittens.Goodstein.HereditaryNotation.n2hn
 
 class GoodsteinTest extends AnyFlatSpec with Matchers {
   lazy val _5: HereditaryNotation = Const(5)
@@ -74,5 +75,25 @@ class GoodsteinTest extends AnyFlatSpec with Matchers {
     HereditaryNotation("3·k^2").dec(10) shouldEqual HereditaryNotation("2·k^2 + 9·k + 9")
     HereditaryNotation("3·k^2 + 8").dec(10) shouldEqual HereditaryNotation("3·k^2 + 7")
     HereditaryNotation("2·k^k").dec(3) shouldEqual HereditaryNotation("k^k + 2·k^2 + 2·k + 2")
+  }
+  
+  "we" should "accept numbers" in {
+    def check(n: Int, expected: String): Unit = {
+      HereditaryNotation(n).toString shouldEqual expected
+    }
+    check(1, "1")
+    check(2, "k")
+    check(3, "k + 1")
+    check(4, "k^k")
+    check(5, "k^k + 1")
+    check(6, "k^k + k")
+    check(7, "k^k + k + 1")
+    check(8, "k^{k + 1}")
+    check(9, "k^{k + 1} + 1")
+    check(10, "k^{k + 1} + k")
+    
+    for (i <- 1 until 100) {
+      HereditaryNotation(i).eval(2) shouldEqual i
+    }
   }
 }
