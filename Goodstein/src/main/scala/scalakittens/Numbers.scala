@@ -52,7 +52,7 @@ object Numbers {
    */
   def toFloatingString(n: BigInt, nDigits: Int): String = {
     val d = exponent(n.abs)
-    if (d < nDigits + 5) n.toString else {
+    if (d < nDigits + 8) n.toString else {
       val m = n.toString.take(nDigits + 2).toDouble / math.pow(10, nDigits + 1)
       val ms = m.toString.take(nDigits + 2).takeWhile('E' != _)
       val sign = if (n < 0) "-" else ""

@@ -5,8 +5,6 @@ import org.scalatest.matchers.should.Matchers
 import scalakittens.Goodstein.HereditaryNotation
 import Goodstein._
 
-import java.util.Date
-
 class GoodsteinTest extends AnyFlatSpec with Matchers {
   lazy val _5: HereditaryNotation = Const(5)
   lazy val _8: HereditaryNotation = Const(8)
@@ -141,42 +139,6 @@ class GoodsteinTest extends AnyFlatSpec with Matchers {
   
   "we" should "float" in {
     val sut = pow(10, 100)
-    toFloatingString(sut, 4) shouldEqual("1.0·10^{100}")
-  }
-  
-  "we" should "do some stuff" in {
-    def gs(n: Int) = {
-      LazyList.iterate((2, HereditaryNotation(n))){ case (base, expr) => 
-        (base+1, expr.dec(base + 1))
-      }
-    } 
-    
-    def msfmt(ms: Long) =
-      if (ms < 1500) s"${ms}ms" else
-      if (ms < 90000) s"${ms/1000}sec" else
-      if (ms < 6000000) s"${ms/60000}min" else 
-        s"${ms/3600000}h"
-
-    println(s"started ${new Date()}")
-    println(" Base |\t          Value           |           Hereditary Notation     ")
-    println(" ---- |\t------------------------- | ----------------------------------")
-    var t = System.currentTimeMillis()
-    for {
-      (i, n) <- gs(100) take 100
-    } {
-      val t1 = System.currentTimeMillis()
-      val dt1 = t1 - t
-      val x = toFloatingString(n.eval(i), 6)
-      val t2 = System.currentTimeMillis()
-      val dt2 = t2 - t1
-      val line = f"   $i%2d |   $x%22s  | $n\t\t\t\t(${msfmt(dt1)} and ${msfmt(dt2)})"
-      t = t2
-//      val html = line.
-//        replace("}", "</sup>").
-//        replace("^", "<sup>").
-//        replace("{", "")
-
-      println(line)
-    }
+    toFloatingString(sut, 4) shouldEqual "1.0·10^{100}"
   }
 }

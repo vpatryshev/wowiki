@@ -1,7 +1,6 @@
 package scalakittens
 
 import scala.language.postfixOps
-import scala.util.Sorting
 import scala.util.parsing.combinator._
 
 /**
@@ -16,16 +15,19 @@ object Goodstein {
    */
   trait HereditaryNotation extends Ordered[HereditaryNotation] { expr =>
     val constantTerm: BigInt
+    /**
+     * terms with their coefficients
+     */
     val terms: List[(HereditaryNotation, BigInt)]
-
+    
     lazy val height: Int = terms.lastOption map (1 + _._1.height) getOrElse 0
     lazy val length: Int = terms.length
 
     /**
-     * Decrease the value by 1
+     * Decrease the expression by 1
      * Assuming that the current base is is `base`
      * @param base the base at which we decrease it
-     * @return another number in hereditary representation
+     * @return another expression in HereditaryNotation
      */
     def dec(base: BigInt): HereditaryNotation = {
       if (constantTerm > 0) {
@@ -41,12 +43,22 @@ object Goodstein {
         }
       }
     }
-    
+
+    /**
+     * Add a number to the constant term
+     * @param n the number to add
+     * @return a new HereditaryNotation expression
+     */
     def +(n: BigInt): HereditaryNotation = new HereditaryNotation {
       override val constantTerm: BigInt = expr.constantTerm + n
       override val terms: List[(HereditaryNotation, BigInt)] = expr.terms
     }
 
+    /**
+     * Evaluate an expression in HereditaryNotation for a given base
+     * @param base the base
+     * @return a big number, the value of this expression
+     */
     def eval(base: BigInt): BigInt = terms.foldLeft(constantTerm) {
       case (s, (t, c)) => s + c * pow(base, t.eval(base))
     }
@@ -147,12 +159,12 @@ object Goodstein {
     }
 
     def apply(n: Int): HereditaryNotation = {
-      apply(intToHNtext(n))
+      apply(intToHnText(n))
     }
     
-    def intToHNtext(n: Int): String = {
+    def intToHnText(n: Int): String = {
       val constTerm = if (n % 2 == 0) "0" else "1"
-      val terms = (1 until 32) collect { case i if (n & (1 << i)) != 0 => s"k^{${intToHNtext(i)}}" } toList
+      val terms = (1 until 32) collect { case i if (n & (1 << i)) != 0 => s"k^{${intToHnText(i)}}" } toList
 
       (constTerm :: terms) mkString "+"
     }
@@ -209,4 +221,25 @@ object Goodstein {
   def fromLatex(latex: String): HereditaryNotation = {
     HereditaryNotation(latex.replace("""\(\times\)""", "·"))
   }
+
+  def main(args: Array[String]): Unit = {
+    def gs(n: Int) = {
+      LazyList.iterate((2, HereditaryNotation(n))) {
+        case (base, expr) => (base+1, expr.dec(base + 1))
+      }
+    }
+
+    val Mil = 1000000
+    val start = System.currentTimeMillis()
+    
+    for {
+      (i, n) <- gs(4) takeWhile (_._1 <= 1000 * Mil)
+    } {
+      if (i % (10*Mil) == 0 || (n.constantTerm + 1) % i < 3) {
+        val x = toFloatingString(n.eval(i), 6)
+        println(f" $i%7d |   $x%20s  | $n\t\t\t\t${System.currentTimeMillis - start}")
+      }
+    }
+  }
+
 }
