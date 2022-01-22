@@ -1,6 +1,7 @@
 package scalakittens
 
 import scala.language.postfixOps
+import scala.util.Sorting
 import scala.util.parsing.combinator._
 
 /**
@@ -17,7 +18,8 @@ object Goodstein {
     val constantTerm: BigInt
     val terms: List[(HereditaryNotation, BigInt)]
 
-    lazy val height: Int = if (terms.isEmpty) 0 else 1 + terms.head._1.height
+    lazy val height: Int = terms.lastOption map (1 + _._1.height) getOrElse 0
+    lazy val length: Int = terms.length
 
     /**
      * Decrease the value by 1
@@ -80,7 +82,22 @@ object Goodstein {
     def toLatex: String = toString.replace("·", """\(\times\)""")
 
     override def compare(that: HereditaryNotation): Int = {
-      (this.height, this.constantTerm).compare(that.height, that.constantTerm)
+      this.height compare that.height match {
+        case other if other != 0 => other
+        case 0 =>
+          val pairs = this.terms.reverse zip that.terms.reverse
+          val firstDiff = pairs find(x => x._1 != x._2)
+          firstDiff match {
+            case None =>
+              val c = (this.terms.length, this.constantTerm) compare (that.terms.length, that.constantTerm)
+              c
+            case Some(t) =>
+             val c = t._1 compare t._2
+              val c1 = t._1._1 compare t._2._1
+              val c2 = t._1._2 compare t._2._2
+              c
+          }
+      }
     }
 
     override def equals(obj: Any): Boolean = {
@@ -117,23 +134,25 @@ object Goodstein {
      * TR(8, TR(6, TR(2)), TR(2, TR(3, TR(1,TR(1)))))
      */
     def apply(constant: BigInt, theContents:  List[(HereditaryNotation, BigInt)]): HereditaryNotation = {
-      val grouped: Map[HereditaryNotation, Seq[(HereditaryNotation, BigInt)]] = theContents.groupBy(_._1)
-      val contentsMap: Map[HereditaryNotation, BigInt] = grouped map { case (term, seq) => term -> seq.map(_._2).foldLeft(Big0)(_ + _) }
-      val correctContents = contentsMap.filter(_._2 > 0).toList.sorted
+      val grouped = theContents.groupBy(_._1)
+      val contentsMap =  grouped map { case (term, seq) => term -> seq.map(_._2).sum }
+      
+      val sortedContents = contentsMap.filter(_._2 > 0).toList.sorted
 
-      new HereditaryNotation {
+      val result = new HereditaryNotation {
         override val constantTerm: BigInt = constant
-        override val terms: List[(HereditaryNotation, BigInt)] = correctContents
+        override val terms: List[(HereditaryNotation, BigInt)] = sortedContents
       }
+      result
     }
 
     def apply(n: Int): HereditaryNotation = {
-      apply(n2hn(n))
+      apply(intToHNtext(n))
     }
     
-    def n2hn(n: Int): String = {
+    def intToHNtext(n: Int): String = {
       val constTerm = if (n % 2 == 0) "0" else "1"
-      val terms = (1 until 32) collect { case i if (n & (1 << i)) != 0 => s"k^{${n2hn(i)}}" } toList
+      val terms = (1 until 32) collect { case i if (n & (1 << i)) != 0 => s"k^{${intToHNtext(i)}}" } toList
 
       (constTerm :: terms) mkString "+"
     }
@@ -160,8 +179,7 @@ object Goodstein {
 
     def expr: Parser[HereditaryNotation] = repsep(term, "+") ^^ {
       terms => 
-        val const = terms.map(_.constantTerm).fold(Big0)(_+_)
-        HereditaryNotation(const, terms flatMap (_.terms))
+        HereditaryNotation(terms map(_.constantTerm) sum, terms flatMap (_.terms))
     }
 
     def coefficient: Parser[BigInt] = (digits ~ "·") ^^ { 

@@ -39,7 +39,9 @@ object Numbers {
       else exp(n / 10, 1 + acc)
     }
 
-    exp(n, 0)
+    val estimate = math.max(n.bitLength * 3 / 10 - 1, 0)
+    val big10 = pow(10, estimate)
+    estimate + exp(n / big10, 0)
   }
 
   /**
@@ -50,9 +52,12 @@ object Numbers {
    */
   def toFloatingString(n: BigInt, nDigits: Int): String = {
     val d = exponent(n.abs)
-    val m = n.toString.take(nDigits + 2).toDouble / math.pow(10, nDigits + 1)
-    val ms = m.toString.take(nDigits + 2)
-    val sign = if (n < 0) "-" else ""
-    s"$sign$ms·10^{$d}"
+    if (d < nDigits + 5) n.toString else {
+      val m = n.toString.take(nDigits + 2).toDouble / math.pow(10, nDigits + 1)
+      val ms = m.toString.take(nDigits + 2).takeWhile('E' != _)
+      val sign = if (n < 0) "-" else ""
+      val exp = if (d<10) s"$d" else s"{$d}"
+      s"$sign$ms·10^$exp"
+    }
   }
 }
