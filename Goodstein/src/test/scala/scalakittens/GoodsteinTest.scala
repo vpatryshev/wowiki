@@ -8,20 +8,20 @@ import Goodstein._
 class GoodsteinTest extends AnyFlatSpec with Matchers {
   lazy val _5: HereditaryNotation = Const(5)
   lazy val _8: HereditaryNotation = Const(8)
-  lazy val twoByPowerOfThreeByTen: HereditaryNotation = HereditaryNotation(2, _8 -> BigInt(3) :: Nil)
-  lazy val sample: HereditaryNotation = HereditaryNotation(1, List(_5 -> 3, twoByPowerOfThreeByTen -> 5))
+  lazy val twoByPowerOfThreeByTen: HereditaryNotation = HereditaryNotation(2, new Term(_8, BigInt(3))::Nil)
+  lazy val sample: HereditaryNotation = HereditaryNotation(1, new Term(_5, 3)::new Term(twoByPowerOfThreeByTen, 5)::Nil)
 
   "we" should "eval" in {
       sample.eval(1) shouldEqual 9
       twoByPowerOfThreeByTen.eval(2) shouldEqual 770
-      HereditaryNotation(3, List(_5->2, _8->6)).eval(2) shouldEqual 1603
+      HereditaryNotation(3, List(new Term(_5, 2), new Term(_8,6))).eval(2) shouldEqual 1603
       val bigOne = sample.eval(3)
       bigOne.bitLength shouldEqual 31203
       toFloatingString(bigOne, 5) shouldEqual """6.77437·10^{9392}"""
     }
 
   "we" should "toString" in {
-    HereditaryNotation(0, List(HereditaryNotation.K -> 1)).toString shouldEqual "k^k"
+    HereditaryNotation(0, new Term(HereditaryNotation.K, 1)::Nil).toString shouldEqual "k^k"
     twoByPowerOfThreeByTen.toString shouldEqual "3·k^8 + 2"
     sample.toString shouldEqual "5·k^{3·k^8 + 2} + 3·k^5 + 1"
     HereditaryNotation.One.toString shouldEqual "1"
@@ -36,7 +36,7 @@ class GoodsteinTest extends AnyFlatSpec with Matchers {
     def check(a: String, expected: Int): Unit = {
       val x = HereditaryNotation(a)
       val actual = x.height
-      if (actual != expected) fail(s"expected hight $expected of $x, got $actual")
+      if (actual != expected) fail(s"expected height $expected of $x, got $actual")
     }
     
     check("42", 0)
@@ -50,14 +50,15 @@ class GoodsteinTest extends AnyFlatSpec with Matchers {
   
   "we" should "compare" in {
     def check(a: String, b: String): Unit = {
-      val rels="<=>"
+      val relations = "<=>"
       val x = HereditaryNotation(a)
       val y = HereditaryNotation(b)
       val cmp = x compare y
-      val c = rels.charAt(1 + cmp)
+      val c = relations .charAt(1 + cmp)
       if (cmp != -1) fail(s"$x $c $y")
     }
 
+    check("k^k", "k^{k+1}")
     check("k^k + 1", "k^k + k")
     check("k^{k^k + 1}", "k^{k^k + k}")
     check("k", "2·k")
@@ -65,7 +66,6 @@ class GoodsteinTest extends AnyFlatSpec with Matchers {
     check("2·k", "2·k + 1")
     check("k", "k^k")
     check("k^2", "k^k")
-    check("k^k", "k^{k+1}")
     check("k^{k+1}", "k^{k+2}")
     check("k^{k+1}", "k^{2·k+1}")
   }
@@ -73,29 +73,27 @@ class GoodsteinTest extends AnyFlatSpec with Matchers {
   "we" should "parse" in {
     def check(s: String, expected: String = null): Unit = {
       val sut = HereditaryNotation(s)
-      val suts = sut.toString
-      suts shouldEqual Option(expected).getOrElse(s)
+      val string = sut.toString
+      string shouldEqual Option(expected).getOrElse(s)
     }
+    check("5·k^9")
     check("k^{k^k + k} + k^{k^k + 1} + k + 2")
-    check("k^{k^k + k} + k^{k^k + 1} + k^k")
     check("256")
+    check("k")
+    check("5·k^k")
+    check("5·k")
     check("k^k")
     check("k^{k}", "k^k")
-    check("22+k", "k + 22")
-    check("123 + 321 + k + k + k^{k} + k^k + 5·k", "2·k^k + 7·k + 444")
+    check("k + 22", "k + 22")
+    check("k^{k^k + k} + k^{k^k + 1} + k^k")
+    check("k + k + k^{k} + k^k + 5·k + 444", "2·k^k + 7·k + 444")
     check("10·k^{1+2·k^{13·k}} + k^{k}", "10·k^{2·k^{13·k} + 1} + k^k")
 
     check("3·k^3 + 3·k^2 + 3·k + 3")
     check("k^{k} + k^k", "2·k^k")
-    check("k")
-    check("5·k^9")
-    check("5·k^k")
-    check("5·k")
-    check("k^k")
     check("k^k + k^k", "2·k^k")
     check("k^{0 + k} + k^{k + 0}", "2·k^k")
     check("k^9")
-    check("256")
     check("k^{k}", "k^k")
     check("22 + k", "k + 22")
     check("3·k^{2·k^{k + 1}} + 4·k^{42} + 5·k^9 + 7·k + 49")

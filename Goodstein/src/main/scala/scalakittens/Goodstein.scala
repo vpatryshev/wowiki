@@ -18,9 +18,11 @@ object Goodstein {
     /**
      * terms with their coefficients
      */
-    val terms: List[(HereditaryNotation, BigInt)]
+    val terms: List[Term]
     
-    lazy val height: Int = terms.lastOption map (1 + _._1.height) getOrElse 0
+    lazy val reverseTerms: List[Term] = terms.reverse
+    
+    lazy val height: Int = terms.lastOption map (_.height) getOrElse 0
     lazy val length: Int = terms.length
 
     /**
@@ -31,15 +33,18 @@ object Goodstein {
      */
     def dec(base: BigInt): HereditaryNotation = {
       if (constantTerm > 0) {
-        HereditaryNotation(constantTerm-1, terms)
+        HereditaryNotation(constantTerm - 1, terms)
+      } else if (terms.isEmpty) {
+        throw new Done(base)
       } else {
-        val (lowest, q) = terms.head
-        val allButLast = terms.tail
-        val newMember = lowest.dec(base)
-        val newSeq = lowest->(q-1) :: allButLast // for q=1 we'll have a coefficient 0, which gets eliminated in constructor
-        newMember match {
-          case HereditaryNotation.Zero => HereditaryNotation(base-1, newSeq)
-          case _       => HereditaryNotation(0, newMember -> base :: newSeq).dec(base)
+        val lowestTerm = terms.head
+        val termWithLessCoefficient = lowestTerm.decreaseCoefficient
+        val newTerms = termWithLessCoefficient::terms.tail
+
+        lowestTerm.degree.dec(base) match {
+          case HereditaryNotation.Zero => HereditaryNotation(base-1, newTerms)
+          case smallerDegree           =>
+            HereditaryNotation(0, new Term(smallerDegree, base) :: newTerms).dec(base)
         }
       }
     }
@@ -49,10 +54,7 @@ object Goodstein {
      * @param n the number to add
      * @return a new HereditaryNotation expression
      */
-    def +(n: BigInt): HereditaryNotation = new HereditaryNotation {
-      override val constantTerm: BigInt = expr.constantTerm + n
-      override val terms: List[(HereditaryNotation, BigInt)] = expr.terms
-    }
+    def +(n: BigInt): HereditaryNotation = HereditaryNotation(constantTerm + n, terms)
 
     /**
      * Evaluate an expression in HereditaryNotation for a given base
@@ -60,31 +62,13 @@ object Goodstein {
      * @return a big number, the value of this expression
      */
     def eval(base: BigInt): BigInt = terms.foldLeft(constantTerm) {
-      case (s, (t, c)) => s + c * pow(base, t.eval(base))
+      case (value, t) => value + t.q * pow(base, t.degree.eval(base))
     }
 
     override lazy val toString: String = {
-      val termStrings = terms map {
-        case (t,c) => (t.toString, c.toString)
-      }
-      
-      val reducedStrings = termStrings map {
-          case ("1", "1") => "k"
-          case ("1", c)    => s"$c·k"
-          case (ts, "1")   =>
-            val exponent = if (ts.length == 1) ts else s"{$ts}"
-            s"k^$exponent"
-          case (ts, c) =>
-            val exponent = if (ts.length == 1) ts else s"{$ts}"
-            s"$c·k^$exponent"
-        }
+      val termsString = reverseTerms map { _.toString } mkString " + "
 
-      val stringOfTerms = reducedStrings.fold ("") {
-        case ("", term) => term
-        case (acc, term) => s"$term + $acc"
-      }
-
-      (stringOfTerms, constantTerm) match {
+      (termsString, constantTerm) match {
         case ("", x) => x.toString
         case (s, Big0)  => s
         case (s, x) => s"$s + $x"
@@ -97,17 +81,12 @@ object Goodstein {
       this.height compare that.height match {
         case other if other != 0 => other
         case 0 =>
-          val pairs = this.terms.reverse zip that.terms.reverse
+          val pairs = reverseTerms zip that.reverseTerms
           val firstDiff = pairs find(x => x._1 != x._2)
           firstDiff match {
             case None =>
-              val c = (this.terms.length, this.constantTerm) compare (that.terms.length, that.constantTerm)
-              c
-            case Some(t) =>
-             val c = t._1 compare t._2
-              val c1 = t._1._1 compare t._2._1
-              val c2 = t._1._2 compare t._2._2
-              c
+              (this.length, this.constantTerm) compare (that.length, that.constantTerm)
+            case Some(t) => t._1 compare t._2
           }
       }
     }
@@ -124,36 +103,70 @@ object Goodstein {
 
   case class Const(value: BigInt) extends HereditaryNotation {
     override val constantTerm: BigInt = value
-    override val terms: List[(HereditaryNotation, BigInt)] = Nil
+    override val terms: List[Term] = Nil
 
     def this(n: Int) = this(BigInt(n))
   }
 
-  class Term(degree: HereditaryNotation, q: BigInt) extends HereditaryNotation {
-    override val constantTerm: BigInt = Big0
-    override val terms: List[(HereditaryNotation, BigInt)] = degree -> q :: Nil
+  class Term(val degree: HereditaryNotation, val q: BigInt) extends HereditaryNotation {
 
-    def *(p: BigInt) = new Term(degree, q*p)
+    override val constantTerm: BigInt = Big0
+    override lazy val height: Int = 1 + degree.height
+    override lazy val length: Int = 1
+    override lazy val terms: List[Term] = this::Nil
+
+    def withCoefficient(p: BigInt) = new Term(degree, p)
+
+    def decreaseCoefficient: Term = withCoefficient(q - 1)
+    
+    override lazy val toString: String = {
+      val exp = degree.toString match {
+        case "1"                  => ""
+        case ts if ts.length == 1 => s"^$ts"
+        case ts                   => s"^{$ts}"
+      }
+      s"${if (q == Big1) "" else s"$q·"}k$exp"
+    }
+    
+    def compare(that: Term): Int = {
+      (degree, q) compare (that.degree, that.q)
+    }
+
+    override def compare(that: HereditaryNotation): Int = {
+      height compare that.height match {
+        case not0 if not0 != 0 => not0
+        case 0 =>
+          that.terms.lastOption match {
+            case None => 1
+            case Some(term) =>
+              compare(term) match {
+                case not0 if not0 != 0 => not0
+                case 0 => (1, Big0) compare (that.length, that.constantTerm)
+              }
+          }
+      }
+    }
   }
 
-  case class Power(degree: HereditaryNotation) extends Term(degree, Big1)
+  case class Power(override val degree: HereditaryNotation) extends Term(degree, Big1)
 
+  class Done(base: BigInt) extends Exception(s"This is the end of Goodstein sequence, at base $base")
+  
   object HereditaryNotation extends Parser {
     /**
      * @param constant the numeric value at the end of this collection of tower-represented numbers
-     * @param theContents components of the tower representation: another tower (degree) and the quotient for it
-     * e.g. 2*n^{3*n^{n+1} + 5*n + 7} + 6*n^^{2} + 8 is represented as
+     * @param terms components of the tower representation: it's just a pair, degree and coefficient
+     * e.g. 2*n^^{3*n^^{n+1} + 5*n + 7} + 6*n^^{2} + 8 is represented as
      * TR(8, TR(6, TR(2)), TR(2, TR(3, TR(1,TR(1)))))
      */
-    def apply(constant: BigInt, theContents:  List[(HereditaryNotation, BigInt)]): HereditaryNotation = {
-      val grouped = theContents.groupBy(_._1)
-      val contentsMap =  grouped map { case (term, seq) => term -> seq.map(_._2).sum }
-      
+    def apply(constant: BigInt, terms: List[Term]): HereditaryNotation = {
+      val grouped: Map[HereditaryNotation, List[Term]] = terms.groupBy(_.degree)
+      val contentsMap: Map[HereditaryNotation, BigInt] = grouped map { case (t, seq) => t -> seq.map(_.q).sum }
       val sortedContents = contentsMap.filter(_._2 > 0).toList.sorted
 
       val result = new HereditaryNotation {
         override val constantTerm: BigInt = constant
-        override val terms: List[(HereditaryNotation, BigInt)] = sortedContents
+        override val terms: List[Term] = sortedContents map { case (deg, q) => new Term(deg, q)}
       }
       result
     }
@@ -191,22 +204,22 @@ object Goodstein {
 
     def expr: Parser[HereditaryNotation] = repsep(term, "+") ^^ {
       terms => 
-        HereditaryNotation(terms map(_.constantTerm) sum, terms flatMap (_.terms))
+        val const = terms map(_.constantTerm) sum
+        val newTerms = terms flatMap (_.terms)
+        HereditaryNotation(const, newTerms)
     }
 
-    def coefficient: Parser[BigInt] = (digits ~ "·") ^^ { 
-      case n ~ _ => n
-    }
+    def coefficient: Parser[BigInt] = digits <~ "·"
 
-    def power: Parser[HereditaryNotation] = ("k^{"~expr~"}" | "k^k" | ("k^"~smallDegree) | "k") ^^ {
+    def power: Parser[HereditaryNotation] = (("k^"~>smallDegree) | "k^{"~>expr<~"}" | "k^k" | "k") ^^ {
+      case digit: Int => Power(Const(digit))
+      case expr: HereditaryNotation => Power(expr)
       case "k^k" => Power(HereditaryNotation.K)
-      case "k^{"~(expr:HereditaryNotation)~"}" => Power(expr)
-      case "k^" ~ (digit: Int) => Power(Const(digit))
       case "k" => HereditaryNotation.K
     }
     
     def term: Parser[HereditaryNotation] = (power | (coefficient ~ power) | constantTerm) ^^ {
-      case (q: BigInt) ~ (t:Term) => t * q
+      case (q: BigInt) ~ (t:Term) => t withCoefficient q
       case c: Const => c
       case t: Term => t
     }
@@ -233,9 +246,9 @@ object Goodstein {
     val start = System.currentTimeMillis()
     
     for {
-      (i, n) <- gs(4) takeWhile (_._1 <= 1000 * Mil)
+      (i, n) <- gs(4) takeWhile (_._1 <= 10000 * Mil)
     } {
-      if (i % (10*Mil) == 0 || (n.constantTerm + 1) % i < 3) {
+      if (i % (100*Mil) == 0 || (n.constantTerm + 1) % i < 3) {
         val x = toFloatingString(n.eval(i), 6)
         println(f" $i%7d |   $x%20s  | $n\t\t\t\t${System.currentTimeMillis - start}")
       }
