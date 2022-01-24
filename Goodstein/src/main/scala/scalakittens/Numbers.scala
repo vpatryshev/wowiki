@@ -37,7 +37,7 @@ object Numbers {
       }
 
       val estimate = math.max((n.bitLength * 0.30103).toInt - 1, 0)
-      val big10 = Big10 ^^ (estimate / 2)
+      val big10 = Big10 ^^ (estimate / 2) // Calculating 10^^estimate may cause an OOM
       val n1 = n / big10 / big10
       (estimate / 2 * 2) + exp(n1, 0)
     } 
