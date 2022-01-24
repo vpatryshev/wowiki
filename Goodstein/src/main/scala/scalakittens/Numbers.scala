@@ -36,17 +36,11 @@ object Numbers {
         else exp(n / 10, 1 + acc)
       }
 
-      val estimate = math.max(n.bitLength * 3 / 10 - 1, 0)
-      try {
-        val big10 = Big10 ^^ (estimate / 2)
-        val n1 = n / big10
-        val n2 = n1 / big10
-        (estimate/2*2) + exp(n2, 0)
-//      } catch {
-//        case oom: OutOfMemoryError =>
-//          throw new IllegalArgumentException(s"Degree too big: $estimate", oom)
-      }
-    }
+      val estimate = math.max((n.bitLength * 0.30103).toInt - 1, 0)
+      val big10 = Big10 ^^ (estimate / 2)
+      val n1 = n / big10 / big10
+      (estimate / 2 * 2) + exp(n1, 0)
+    } 
 
     /**
      * Represent a big number as a string with mantissa and exponent
