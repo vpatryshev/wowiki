@@ -6,7 +6,7 @@ import scala.util.parsing.combinator._
 
 /**
  * @see https://mathworld.wolfram.com/GoodsteinSequence.html
- * @see 
+ * Also see wikipedia
  */
 object Goodstein {
   import Numbers._
@@ -49,14 +49,16 @@ object Goodstein {
         }
       }
     }
+    
+    def withConstantTerm(n: BigInt): HereditaryNotation = HereditaryNotation(n, terms)
 
     /**
      * Add a number to the constant term
      * @param n the number to add
      * @return a new HereditaryNotation expression
      */
-    def +(n: BigInt): HereditaryNotation = HereditaryNotation(constantTerm + n, terms)
-
+    def +(n: BigInt): HereditaryNotation = withConstantTerm(constantTerm + n)
+    
     /**
      * Evaluate an expression in HereditaryNotation for a given base
      * @param base the base
@@ -161,13 +163,11 @@ object Goodstein {
      * HN(8, HN(6, TR(2)), HN(2, HN(3, HN(1,HN(1)))))
      */
     def apply(constant: BigInt, terms: List[Term]): HereditaryNotation = {
-      val grouped: Map[HereditaryNotation, List[Term]] = terms.groupBy(_.d)
-      val contentsMap: Map[HereditaryNotation, BigInt] = grouped map { case (t, seq) => t -> seq.map(_.c).sum }
-      val sortedContents = contentsMap.filter(_._2 > 0).toList.sorted
-
+      val sortedTerms = terms filter (_.c > 0) sorted
+      
       val result = new HereditaryNotation {
         override val constantTerm: BigInt = constant
-        override val terms: List[Term] = sortedContents map { case (d, c) => Term(c, d)}
+        override val terms: List[Term] = sortedTerms
       }
       result
     }
@@ -250,11 +250,14 @@ object Goodstein {
   def accelerated(n: Int): LazyList[(Int, BigInt, HereditaryNotation)] = {
     LazyList.iterate((1, BigInt(2), HereditaryNotation(n))) {
       case (i, base, expr) =>
-        val stepCandidate: BigInt =
-          if (expr.constantTerm <= 2 || expr.constantTerm > base - 2) 1 else expr.constantTerm - 2
-        val step = if (stepCandidate.isValidLong) stepCandidate else base - 1
-        val newBase = base + step
-        (i+1, newBase, (expr + (1-step)).dec(newBase))
+        if (expr.constantTerm <= 2 || base - expr.constantTerm > 2) {
+          val newBase = base + 1
+          (i+1, newBase, expr.dec(newBase))
+        } else {
+          val jump: BigInt = expr.constantTerm - 1
+          val newBase: BigInt = base + jump
+          (i+1, newBase, expr.withConstantTerm(2).dec(newBase))
+        }
     }
   }
   
@@ -262,7 +265,7 @@ object Goodstein {
 
     val Mil = 1000000L
     
-    val stream = sequential(4)
+    val stream = accelerated(4)
     println(s"started ${new Date()}")
     println("   Step   |   Base   |          Value          |         Hereditary Notation     ")
     println(" -------- | -------- | ----------------------- | --------------------------------")
@@ -270,10 +273,10 @@ object Goodstein {
     for {
       (i, base, n) <- stream takeWhile (_._1 <= Mil)
     } {
-      val worthPrinting = (n.constantTerm + 1) % i < 4
+      val worthPrinting = ((n.constantTerm + 1) % base < 3) && (i < 100 || (i > 547000 && i % 300 < 3))
       if (worthPrinting) {
-        val x = n.eval(i).toFloatingString(6)
-        println(f" $i%8d | $base%8d |   $x%20s  | $n")
+        val x = n.eval(base).toFloatingString(6)
+        println(f" $i%8d |          |   $x%20s  | $n")
       }
     }
   }

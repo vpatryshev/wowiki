@@ -26,7 +26,7 @@ object Numbers {
     }
 
     /**
-     * Calculate the decimal exponent of a big number
+     * Calculate the decimal exponent of a big positive number
      * @return its exponent
      */
     lazy val exponent: Int = {
@@ -37,8 +37,15 @@ object Numbers {
       }
 
       val estimate = math.max(n.bitLength * 3 / 10 - 1, 0)
-      val big10 = Big10 ^^ estimate
-      estimate + exp(n / big10, 0)
+      try {
+        val big10 = Big10 ^^ (estimate / 2)
+        val n1 = n / big10
+        val n2 = n1 / big10
+        estimate + exp(n2, 0)
+//      } catch {
+//        case oom: OutOfMemoryError =>
+//          throw new IllegalArgumentException(s"Degree too big: $estimate", oom)
+      }
     }
 
     /**

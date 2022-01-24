@@ -86,18 +86,16 @@ class GoodsteinTest extends AnyFlatSpec with Matchers {
     check("k^{k}", "k^k")
     check("k + 22", "k + 22")
     check("k^{k^k + k} + k^{k^k + 1} + k^k")
-    check("k + k + k^{k} + k^k + 5·k + 444", "2·k^k + 7·k + 444")
+    check("7·k + 2·k^{k} + 444", "2·k^k + 7·k + 444")
     check("10·k^{1+2·k^{13·k}} + k^{k}", "10·k^{2·k^{13·k} + 1} + k^k")
 
     check("3·k^3 + 3·k^2 + 3·k + 3")
-    check("k^{k} + k^k", "2·k^k")
-    check("k^k + k^k", "2·k^k")
-    check("k^{0 + k} + k^{k + 0}", "2·k^k")
+    check("k^{0 + k}", "k^k")
     check("k^9")
     check("k^{k}", "k^k")
     check("22 + k", "k + 22")
     check("3·k^{2·k^{k + 1}} + 4·k^{42} + 5·k^9 + 7·k + 49")
-    check("123 + 321 + k + k + k^{k} + k^k + 5·k", "2·k^k + 7·k + 444")
+    check("444 + 7·k + 2·k^{k}", "2·k^k + 7·k + 444")
   }
 //
   //  val n263 = 3 * pow(263, 263) + 3 * pow(263, 3) + 2 * pow(263, 2) + 30 * 263  
