@@ -12,13 +12,22 @@ class GoodsteinTest extends AnyFlatSpec with Matchers {
   lazy val sample: HereditaryNotation = HereditaryNotation(1, Term(3, _5)::Term(5, twoByPowerOfThreeByTen)::Nil)
 
   "we" should "eval" in {
-      sample.eval(1) shouldEqual 9
-      twoByPowerOfThreeByTen.eval(2) shouldEqual 770
-      HereditaryNotation(3, List(Term(2, _5), Term(6, _8))).eval(2) shouldEqual 1603
-      val bigOne = sample.eval(3)
-      bigOne.bitLength shouldEqual 31203
-      bigOne.toFloatingString(5) shouldEqual """6.77437·10^{9392}"""
-    }
+    sample.eval(1) shouldEqual 9
+    twoByPowerOfThreeByTen.eval(2) shouldEqual 770
+    HereditaryNotation(3, List(Term(2, _5), Term(6, _8))).eval(2) shouldEqual 1603
+    val bigOne = sample.eval(3)
+    bigOne.bitLength shouldEqual 31203
+    bigOne.toFloatingString(5) shouldEqual """6.77437·10^{9392}"""
+
+    val n1 = HereditaryNotation("k^2 + 1")
+    val value1 = n1.eval(402653182)
+    value1.toFloatingString(6) shouldEqual "1.621295·10^{17}"
+    val n2 = HereditaryNotation("k^2 + 201326591")
+    val value2 = n2.eval(201326592)
+    val q = value1 / value2
+    q shouldEqual BigInt(3)
+    value2.toFloatingString(6) shouldEqual "4.053239·10^{16}"
+  }
 
   "we" should "toString" in {
     HereditaryNotation(0, Power(HereditaryNotation.K)::Nil).toString shouldEqual "k^k"
@@ -136,5 +145,11 @@ class GoodsteinTest extends AnyFlatSpec with Matchers {
   "we" should "float" in {
     val sut = Big10 ^^ 100
     sut.toFloatingString(4) shouldEqual "1.0·10^{100}"
+    val v1 = 5*(Big10^^21)
+    v1.toFloatingString(3) shouldEqual "5.0·10^{21}"
+    val v2 = 5*(Big10^^22)
+    v2.toFloatingString(3) shouldEqual "5.0·10^{22}"
+    val v3 = 5*(Big10^^23)
+    v3.toFloatingString(3) shouldEqual "5.0·10^{23}"
   }
 }

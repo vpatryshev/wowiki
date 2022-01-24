@@ -41,7 +41,7 @@ object Numbers {
         val big10 = Big10 ^^ (estimate / 2)
         val n1 = n / big10
         val n2 = n1 / big10
-        estimate + exp(n2, 0)
+        (estimate/2*2) + exp(n2, 0)
 //      } catch {
 //        case oom: OutOfMemoryError =>
 //          throw new IllegalArgumentException(s"Degree too big: $estimate", oom)

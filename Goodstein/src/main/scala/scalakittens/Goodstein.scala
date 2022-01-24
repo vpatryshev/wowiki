@@ -255,6 +255,7 @@ object Goodstein {
           (i+1, newBase, expr.dec(newBase))
         } else {
           val jump: BigInt = expr.constantTerm - 1
+          require(jump > 0)
           val newBase: BigInt = base + jump
           (i+1, newBase, expr.withConstantTerm(2).dec(newBase))
         }
@@ -273,10 +274,11 @@ object Goodstein {
     for {
       (i, base, n) <- stream takeWhile (_._1 <= Mil)
     } {
-      val worthPrinting = ((n.constantTerm + 1) % base < 3) && (i < 100 || (i > 547000 && i % 300 < 3))
+      val worthPrinting = ((n.constantTerm + 1) % base < 3) && (i < 100 || (i > 549600 && i % 300 < 40))
       if (worthPrinting) {
+        val b = base.toFloatingString(4)
         val x = n.eval(base).toFloatingString(6)
-        println(f" $i%8d |          |   $x%20s  | $n")
+        println(f" $i%8d | $b%8s |   $x%20s  | $n")
       }
     }
   }
