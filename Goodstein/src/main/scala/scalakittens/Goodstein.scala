@@ -266,15 +266,15 @@ object Goodstein {
 
     val Mil = 1000000L
     
-    val stream = sequential(4)
+    val stream = accelerated(100)
     println(s"started ${new Date()}")
     println("   Step   |   Base   |          Value          |         Hereditary Notation     ")
     println(" -------- | -------- | ----------------------- | --------------------------------")
     
     for {
-      (i, base, n) <- stream takeWhile (_._1 <= Mil)
+      (i, base, n) <- stream takeWhile (_._1 <= Mil * Mil)
     } {
-      val worthPrinting = ((n.constantTerm + 1) % base < 3) && (i < 100 || (i > 549600 && i % 300 < 40))
+      val worthPrinting = true //((n.constantTerm + 1) % base < 3) /*&& (i < 100 || (i > 549600 && i % 300 < 40))*/
       if (worthPrinting) {
         val b = base.toFloatingString(4)
         val x = n.eval(base).toFloatingString(6)
