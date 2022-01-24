@@ -1,5 +1,6 @@
 package scalakittens
 
+import java.util.Date
 import scala.language.postfixOps
 import scala.util.parsing.combinator._
 
@@ -41,10 +42,10 @@ object Goodstein {
         val termWithLessCoefficient = lowestTerm.decreaseCoefficient
         val newTerms = termWithLessCoefficient::terms.tail
 
-        lowestTerm.degree.dec(base) match {
+        lowestTerm.d.dec(base) match {
           case HereditaryNotation.Zero => HereditaryNotation(base-1, newTerms)
           case smallerDegree           =>
-            HereditaryNotation(0, new Term(smallerDegree, base) :: newTerms).dec(base)
+            HereditaryNotation(0, Term(base, smallerDegree) :: newTerms).dec(base)
         }
       }
     }
@@ -62,7 +63,7 @@ object Goodstein {
      * @return a big number, the value of this expression
      */
     def eval(base: BigInt): BigInt = terms.foldLeft(constantTerm) {
-      case (value, t) => value + t.q * pow(base, t.degree.eval(base))
+      case (value, t) => value + t.c * (base ^^ t.d.eval(base))
     }
 
     override lazy val toString: String = {
@@ -108,28 +109,28 @@ object Goodstein {
     def this(n: Int) = this(BigInt(n))
   }
 
-  class Term(val degree: HereditaryNotation, val q: BigInt) extends HereditaryNotation {
+  case class Term(c: BigInt, d: HereditaryNotation) extends HereditaryNotation {
 
     override val constantTerm: BigInt = Big0
-    override lazy val height: Int = 1 + degree.height
+    override lazy val height: Int = 1 + d.height
     override lazy val length: Int = 1
     override lazy val terms: List[Term] = this::Nil
 
-    def withCoefficient(p: BigInt) = new Term(degree, p)
+    def withCoefficient(a: BigInt): Term = Term(a, d)
 
-    def decreaseCoefficient: Term = withCoefficient(q - 1)
+    def decreaseCoefficient: Term = withCoefficient(c - 1)
     
     override lazy val toString: String = {
-      val exp = degree.toString match {
+      val exp = d.toString match {
         case "1"                  => ""
         case ts if ts.length == 1 => s"^$ts"
         case ts                   => s"^{$ts}"
       }
-      s"${if (q == Big1) "" else s"$q·"}k$exp"
+      s"${if (c == Big1) "" else s"$c·"}k$exp"
     }
     
     def compare(that: Term): Int = {
-      (degree, q) compare (that.degree, that.q)
+      (d, c) compare (that.d, that.c)
     }
 
     override def compare(that: HereditaryNotation): Int = {
@@ -148,45 +149,49 @@ object Goodstein {
     }
   }
 
-  case class Power(override val degree: HereditaryNotation) extends Term(degree, Big1)
+  def Power(d: HereditaryNotation): Term = Term(Big1, d)
 
   class Done(base: BigInt) extends Exception(s"This is the end of Goodstein sequence, at base $base")
   
   object HereditaryNotation extends Parser {
     /**
-     * @param constant the numeric value at the end of this collection of tower-represented numbers
-     * @param terms components of the tower representation: it's just a pair, degree and coefficient
+     * @param constant the constant term
+     * @param terms components of the tower representation: each one is just a pair, degree and coefficient
      * e.g. 2*n^^{3*n^^{n+1} + 5*n + 7} + 6*n^^{2} + 8 is represented as
-     * TR(8, TR(6, TR(2)), TR(2, TR(3, TR(1,TR(1)))))
+     * HN(8, HN(6, TR(2)), HN(2, HN(3, HN(1,HN(1)))))
      */
     def apply(constant: BigInt, terms: List[Term]): HereditaryNotation = {
-      val grouped: Map[HereditaryNotation, List[Term]] = terms.groupBy(_.degree)
-      val contentsMap: Map[HereditaryNotation, BigInt] = grouped map { case (t, seq) => t -> seq.map(_.q).sum }
+      val grouped: Map[HereditaryNotation, List[Term]] = terms.groupBy(_.d)
+      val contentsMap: Map[HereditaryNotation, BigInt] = grouped map { case (t, seq) => t -> seq.map(_.c).sum }
       val sortedContents = contentsMap.filter(_._2 > 0).toList.sorted
 
       val result = new HereditaryNotation {
         override val constantTerm: BigInt = constant
-        override val terms: List[Term] = sortedContents map { case (deg, q) => new Term(deg, q)}
+        override val terms: List[Term] = sortedContents map { case (d, c) => Term(c, d)}
       }
       result
     }
 
     def apply(n: Int): HereditaryNotation = {
-      apply(intToHnText(n))
-    }
-    
-    def intToHnText(n: Int): String = {
-      val constTerm = if (n % 2 == 0) "0" else "1"
-      val terms = (1 until 32) collect { case i if (n & (1 << i)) != 0 => s"k^{${intToHnText(i)}}" } toList
+      def intToHnText(n: Int): String = {
+        val constTerm = if (n % 2 == 0) "0" else "1"
+        val terms = (1 until 32) collect { case i if (n & (1 << i)) != 0 => s"k^{${intToHnText(i)}}" } toList
 
-      (constTerm :: terms) mkString "+"
+        (constTerm :: terms) mkString "+"
+      }
+
+      apply(intToHnText(n))
     }
     
     val Zero: Const = Const(Big0)
     val One: Const = Const(Big1)
-    val K: Power = Power(One)
+    val K: Term = Power(One)
   }
-  
+
+  /**
+   * Parser for hereditary expressions.
+   * See examples in the test.
+   */
   class Parser extends JavaTokenParsers {
     def digits: Parser[BigInt] = """\d+""".r ^^ { n => BigInt(n) }
 
@@ -200,25 +205,26 @@ object Goodstein {
      * A BigInt number that serves as a constant term
      * @return
      */
-    def constantTerm: Parser[HereditaryNotation] = digits ^^ { Const }
+    private def constantTerm: Parser[HereditaryNotation] = digits ^^ { Const }
 
-    def expr: Parser[HereditaryNotation] = repsep(term, "+") ^^ {
+    private def expr: Parser[HereditaryNotation] = repsep(term, "+") ^^ {
       terms => 
         val const = terms map(_.constantTerm) sum
         val newTerms = terms flatMap (_.terms)
         HereditaryNotation(const, newTerms)
     }
 
-    def coefficient: Parser[BigInt] = digits <~ "·"
+    private def coefficient: Parser[BigInt] = digits <~ "·"
 
-    def power: Parser[HereditaryNotation] = (("k^"~>smallDegree) | "k^{"~>expr<~"}" | "k^k" | "k") ^^ {
-      case digit: Int => Power(Const(digit))
-      case expr: HereditaryNotation => Power(expr)
-      case "k^k" => Power(HereditaryNotation.K)
-      case "k" => HereditaryNotation.K
+    private def power: Parser[HereditaryNotation] =
+      (("k^"~>smallDegree) | "k^{"~>expr<~"}" | "k^k" | "k") ^^ {
+        case digit: Int => Power(Const(digit))
+        case expr: HereditaryNotation => Power(expr)
+        case "k^k" => Power(HereditaryNotation.K)
+        case "k" => HereditaryNotation.K
     }
     
-    def term: Parser[HereditaryNotation] = (power | (coefficient ~ power) | constantTerm) ^^ {
+    private def term: Parser[HereditaryNotation] = (power | (coefficient ~ power) | constantTerm) ^^ {
       case (q: BigInt) ~ (t:Term) => t withCoefficient q
       case c: Const => c
       case t: Term => t
@@ -235,22 +241,39 @@ object Goodstein {
     HereditaryNotation(latex.replace("""\(\times\)""", "·"))
   }
 
-  def main(args: Array[String]): Unit = {
-    def gs(n: Int) = {
-      LazyList.iterate((2, HereditaryNotation(n))) {
-        case (base, expr) => (base+1, expr.dec(base + 1))
-      }
+  def sequential(n: Int): LazyList[(Int, Long, HereditaryNotation)] = {
+    LazyList.iterate((1, 2L, HereditaryNotation(n))) {
+      case (i, base, expr) => (i+1, base+1, expr.dec(base + 1))
     }
+  }
 
-    val Mil = 1000000
-    val start = System.currentTimeMillis()
+  def accelerated(n: Int): LazyList[(Int, BigInt, HereditaryNotation)] = {
+    LazyList.iterate((1, BigInt(2), HereditaryNotation(n))) {
+      case (i, base, expr) =>
+        val stepCandidate: BigInt =
+          if (expr.constantTerm <= 2 || expr.constantTerm > base - 2) 1 else expr.constantTerm - 2
+        val step = if (stepCandidate.isValidLong) stepCandidate else base - 1
+        val newBase = base + step
+        (i+1, newBase, (expr + (1-step)).dec(newBase))
+    }
+  }
+  
+  def main(args: Array[String]): Unit = {
+
+    val Mil = 1000000L
+    
+    val stream = sequential(4)
+    println(s"started ${new Date()}")
+    println("   Step   |   Base   |          Value          |         Hereditary Notation     ")
+    println(" -------- | -------- | ----------------------- | --------------------------------")
     
     for {
-      (i, n) <- gs(4) takeWhile (_._1 <= 10000 * Mil)
+      (i, base, n) <- stream takeWhile (_._1 <= Mil)
     } {
-      if (i % (100*Mil) == 0 || (n.constantTerm + 1) % i < 3) {
-        val x = toFloatingString(n.eval(i), 6)
-        println(f" $i%7d |   $x%20s  | $n\t\t\t\t${System.currentTimeMillis - start}")
+      val worthPrinting = (n.constantTerm + 1) % i < 4
+      if (worthPrinting) {
+        val x = n.eval(i).toFloatingString(6)
+        println(f" $i%8d | $base%8d |   $x%20s  | $n")
       }
     }
   }

@@ -8,20 +8,20 @@ import Goodstein._
 class GoodsteinTest extends AnyFlatSpec with Matchers {
   lazy val _5: HereditaryNotation = Const(5)
   lazy val _8: HereditaryNotation = Const(8)
-  lazy val twoByPowerOfThreeByTen: HereditaryNotation = HereditaryNotation(2, new Term(_8, BigInt(3))::Nil)
-  lazy val sample: HereditaryNotation = HereditaryNotation(1, new Term(_5, 3)::new Term(twoByPowerOfThreeByTen, 5)::Nil)
+  lazy val twoByPowerOfThreeByTen: HereditaryNotation = HereditaryNotation(2, Term(3, _8)::Nil)
+  lazy val sample: HereditaryNotation = HereditaryNotation(1, Term(3, _5)::Term(5, twoByPowerOfThreeByTen)::Nil)
 
   "we" should "eval" in {
       sample.eval(1) shouldEqual 9
       twoByPowerOfThreeByTen.eval(2) shouldEqual 770
-      HereditaryNotation(3, List(new Term(_5, 2), new Term(_8,6))).eval(2) shouldEqual 1603
+      HereditaryNotation(3, List(Term(2, _5), Term(6, _8))).eval(2) shouldEqual 1603
       val bigOne = sample.eval(3)
       bigOne.bitLength shouldEqual 31203
-      toFloatingString(bigOne, 5) shouldEqual """6.77437·10^{9392}"""
+      bigOne.toFloatingString(5) shouldEqual """6.77437·10^{9392}"""
     }
 
   "we" should "toString" in {
-    HereditaryNotation(0, new Term(HereditaryNotation.K, 1)::Nil).toString shouldEqual "k^k"
+    HereditaryNotation(0, Power(HereditaryNotation.K)::Nil).toString shouldEqual "k^k"
     twoByPowerOfThreeByTen.toString shouldEqual "3·k^8 + 2"
     sample.toString shouldEqual "5·k^{3·k^8 + 2} + 3·k^5 + 1"
     HereditaryNotation.One.toString shouldEqual "1"
@@ -136,7 +136,7 @@ class GoodsteinTest extends AnyFlatSpec with Matchers {
   }
   
   "we" should "float" in {
-    val sut = pow(10, 100)
-    toFloatingString(sut, 4) shouldEqual "1.0·10^{100}"
+    val sut = Big10 ^^ 100
+    sut.toFloatingString(4) shouldEqual "1.0·10^{100}"
   }
 }
