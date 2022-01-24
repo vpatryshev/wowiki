@@ -241,8 +241,8 @@ object Goodstein {
     HereditaryNotation(latex.replace("""\(\times\)""", "·"))
   }
 
-  def sequential(n: Int): LazyList[(Int, Long, HereditaryNotation)] = {
-    LazyList.iterate((1, 2L, HereditaryNotation(n))) {
+  def sequential(n: Int): LazyList[(Int, BigInt, HereditaryNotation)] = {
+    LazyList.iterate((1, BigInt(2), HereditaryNotation(n))) {
       case (i, base, expr) => (i+1, base+1, expr.dec(base + 1))
     }
   }
@@ -266,7 +266,7 @@ object Goodstein {
 
     val Mil = 1000000L
     
-    val stream = accelerated(4)
+    val stream = sequential(4)
     println(s"started ${new Date()}")
     println("   Step   |   Base   |          Value          |         Hereditary Notation     ")
     println(" -------- | -------- | ----------------------- | --------------------------------")
