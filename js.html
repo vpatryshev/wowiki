@@ -72,7 +72,7 @@ async function getTheFile() {
   println(filehandle)
 
   // get file contents
-  const fileData = await filehandle.file();
+  const fileData = await filehandle.getFile();
   println(fileData)
   } catch (e) {
     err(`oops, ${e}`)
