@@ -1,0 +1,83 @@
+<html><head>
+  <meta http-equiv="content-type" content="text/html;charset=UTF-8">
+<title>JavaScript Testbed</title>
+</head>
+<body>
+<table border="0">
+ <tr>
+   <td rowspan="3">
+     <textarea rows="20" cols="80" id="in"></textarea>
+   </td>
+   <td valign="top"><font size="-1">JS IDE v.2.0.231612</font>
+   </td>
+ </tr><tr>
+   <td>
+     <input type="file" onchange="getTheFile()">
+   </td>
+ </tr><tr>
+   <td valign="bottom">
+       <input type="button" value="run" onclick="run()"/>
+       <input type="button" id="exp" value="exp"/>
+   </td>
+ </tr>
+
+</table>
+<div height="30" width="80" id="out"><pre></pre></div>
+
+</script>
+<script type="text/javascript">
+  const input = document.getElementById("in")
+
+  function print(x) {
+    out.innerHTML += x
+  }
+  function println(x) {
+    out.innerHTML += x + '<br>'
+  }
+  function err(x) {
+    println('<font color="red">' + x + '</font>')
+  }
+  function cls() {
+     out.innerHTML = '';
+  }
+
+  function readFile(file) {
+    let reader = new FileReader()
+    reader.onload = function() {
+      input.value = reader.result
+      println(`Loaded ${file.name} ${new Date(file.lastModified)}`)
+    }
+
+    reader.onerror = function() {
+      err(reader.error)
+    }
+
+    reader.readAsText(file)
+  }
+
+    function run() {
+      cls();
+      try {
+        eval(input.value);
+      } catch (e) {
+        err(e.message);
+      }
+    }
+
+async function getTheFile() {
+  println("gtf")
+  // Open file picker and destructure the result the first handle
+  try { // when we pass pickerOpts, the method is not found
+  const filehandle = window.showOpenFilePicker();
+  println(filehandle)
+
+  // get file contents
+  const fileData = await filehandle.file();
+  println(fileData)
+  } catch (e) {
+    err(`oops, ${e}`)
+    }
+}
+</script>
+<img src="nothing" name="log" width=1 height=1/>
+</body></html>
