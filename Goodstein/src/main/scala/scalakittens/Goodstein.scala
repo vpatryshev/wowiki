@@ -128,7 +128,7 @@ object Goodstein {
         case ts if ts.length == 1 => s"^$ts"
         case ts                   => s"^{$ts}"
       }
-      s"${if (c == Big1) "" else s"$c·"}k$exp"
+      s"${if (c == Big1) "" else s"${c}·"}k$exp"
     }
     
     def compare(that: Term): Int = {
@@ -233,6 +233,10 @@ object Goodstein {
     def apply(ex: String): HereditaryNotation = parseAll(expr, ex) match {
       case Success(result, _) => result
       case NoSuccess(msg: String, _) => throw new IllegalArgumentException(s"$msg on $ex")
+      // the following two cases are covered in the previous one,
+      // but Scala compiler issues a warning, obviously by mistake.
+//      case Error(x, y) => throw new IllegalArgumentException(x.toString + y.toString)
+//      case Failure(x, y) => throw new IllegalArgumentException(x.toString + y.toString)
     }
   }
   

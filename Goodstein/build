@@ -1,0 +1,7 @@
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+#sdk install scala 2.13.7
+sdk use scala 2.13.7
+#sdk use java 11.0.21-ms
+sdk install java 17.0.10-ms
+sdk use java 17.0.10-ms
+sbt clean run

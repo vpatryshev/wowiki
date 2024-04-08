@@ -69,7 +69,7 @@ object Numbers {
         val ms = m.toString.take(nDigits + 2).takeWhile('E' != _)
         val sign = if (n < 0) "-" else ""
         val exp = if (d<10) s"$d" else s"{$d}"
-        s"$sign$ms·10^$exp"
+        s"$sign${ms}·10^$exp"
       }
     }
   }
