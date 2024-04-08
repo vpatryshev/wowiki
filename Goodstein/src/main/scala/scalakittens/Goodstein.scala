@@ -229,14 +229,16 @@ object Goodstein {
       case c: Const => c
       case t: Term => t
     }
-    
+
+    private def error(ex: String, msg: String): Nothing =
+      throw new IllegalArgumentException(s"$msg on $ex")
     def apply(ex: String): HereditaryNotation = parseAll(expr, ex) match {
       case Success(result, _) => result
-      case NoSuccess(msg: String, _) => throw new IllegalArgumentException(s"$msg on $ex")
-      // the following two cases are covered in the previous one,
+      case NoSuccess(msg, _)  => error(ex, msg)
+      case Error    (msg, _)  => error(ex, msg)
+      case Failure  (msg, _)  => error(ex, msg)
+      // the last two cases are covered in the previous one,
       // but Scala compiler issues a warning, obviously by mistake.
-//      case Error(x, y) => throw new IllegalArgumentException(x.toString + y.toString)
-//      case Failure(x, y) => throw new IllegalArgumentException(x.toString + y.toString)
     }
   }
   
