@@ -2,7 +2,7 @@
 This letter was written and signed several years ago.
 I'll be glad to add links to posts of the people
 who admit they made a mistake (everyone can make a mistake) and retracted their signature.
-1. [](https://twitter.com/fbrasisil/status/1785379992270201257)
+1. [Flavio Brasil](https://twitter.com/fbrasisil/status/1785379992270201257)
 --- by May 12, 2024 Flavio is the only one to publicly declare his retraction)
 
 [scala-open-letter.github.io](/)
