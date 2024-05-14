@@ -6,7 +6,7 @@ who admit they made a mistake (everyone can make a mistake) and retracted their 
 2. [Alex Nedelcu](https://twitter.com/alexelcu/status/1784144672442515862)
 --- by May 12, 2024 these are just two to publicly declare his retraction)
 
-(scala-open-letter.github.io)[scala-open-letter.github.io]
+[scala-open-letter.github.io](scala-open-letter.github.io)
 
 Open letter of support for community members targeted by Jon Pretty
 -------------------------------------------------------------------
